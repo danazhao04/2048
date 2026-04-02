@@ -232,11 +232,14 @@ body::after {
   --tile-size: calc((100% - (var(--gap) * 3)) / 4);
   position: absolute;
   inset: var(--board-pad);
+  z-index: 1;
   pointer-events: none;
 }
 
 .tile {
   position: absolute;
+  top: 0;
+  left: 0;
   width: var(--tile-size);
   height: var(--tile-size);
   transform: translate(var(--tile-x), var(--tile-y));
@@ -345,6 +348,7 @@ body::after {
 .overlay {
   position: absolute;
   inset: 0;
+  z-index: 2;
   display: grid;
   place-items: center;
   padding: 1rem;
