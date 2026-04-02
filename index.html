@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>2048</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="hero panel">
+        <div class="hero-copy">
+          <h1>2048</h1>
+        </div>
+        <div class="hero-controls">
+          <div class="score-grid" aria-label="Scoreboard">
+            <article class="score-card">
+              <span class="score-label">Score</span>
+              <strong id="score">0</strong>
+            </article>
+            <article class="score-card">
+              <span class="score-label">Best</span>
+              <strong id="best-score">0</strong>
+            </article>
+          </div>
+          <div class="button-row">
+            <button id="new-game" class="button button-primary" type="button">
+              New Game
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="game-layout">
+        <div class="board-panel panel">
+          <div id="board-shell" class="board-shell">
+            <div id="grid" class="grid" role="grid" aria-label="2048 board"></div>
+            <div id="overlay" class="overlay hidden" aria-live="polite">
+              <div class="overlay-card">
+                <p id="overlay-tag" class="overlay-tag"></p>
+                <h2 id="overlay-title"></h2>
+                <p id="overlay-text" class="overlay-text"></p>
+                <div class="button-row overlay-actions">
+                  <button
+                    id="overlay-primary"
+                    class="button button-primary"
+                    type="button"
+                  ></button>
+                  <button
+                    id="overlay-secondary"
+                    class="button button-ghost"
+                    type="button"
+                  >
+                    New Game
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
