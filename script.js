@@ -38,6 +38,7 @@ class Game2048 {
     this.handlePointerDown = this.handlePointerDown.bind(this);
     this.handlePointerUp = this.handlePointerUp.bind(this);
     this.handleOverlayPrimary = this.handleOverlayPrimary.bind(this);
+    this.handleResize = this.handleResize.bind(this);
 
     this.createCells();
     this.bindEvents();
@@ -60,6 +61,7 @@ class Game2048 {
 
   bindEvents() {
     window.addEventListener("keydown", this.handleKeyDown);
+    window.addEventListener("resize", this.handleResize);
     this.boardShellEl.addEventListener("pointerdown", this.handlePointerDown);
     this.boardShellEl.addEventListener("pointerup", this.handlePointerUp);
     this.newGameButton.addEventListener("click", () => this.start());
@@ -194,6 +196,10 @@ class Game2048 {
     }
 
     this.start();
+  }
+
+  handleResize() {
+    this.render();
   }
 
   move(direction) {
@@ -478,8 +484,23 @@ class Game2048 {
     return false;
   }
 
-  getTilePosition(index) {
-    return `calc(${index} * (var(--tile-size) + var(--gap)))`;
+  getTileMetrics(row, col) {
+    const cellIndex = row * GRID_SIZE + col;
+    const cellEl = this.backgroundCellEls[cellIndex];
+
+    if (!cellEl) {
+      return { x: 0, y: 0, width: 0, height: 0 };
+    }
+
+    const layerRect = this.tileLayerEl.getBoundingClientRect();
+    const cellRect = cellEl.getBoundingClientRect();
+
+    return {
+      x: cellRect.left - layerRect.left,
+      y: cellRect.top - layerRect.top,
+      width: cellRect.width,
+      height: cellRect.height,
+    };
   }
 
   syncTileElements() {
@@ -510,8 +531,11 @@ class Game2048 {
 
       tileEl.className = "tile";
       tileEl.dataset.value = String(tile.value);
-      tileEl.style.setProperty("--tile-x", this.getTilePosition(tile.col));
-      tileEl.style.setProperty("--tile-y", this.getTilePosition(tile.row));
+      const { x, y, width, height } = this.getTileMetrics(tile.row, tile.col);
+      tileEl.style.setProperty("--tile-x", `${x}px`);
+      tileEl.style.setProperty("--tile-y", `${y}px`);
+      tileEl.style.width = `${width}px`;
+      tileEl.style.height = `${height}px`;
       tileEl.setAttribute("aria-label", `Tile ${formatter.format(tile.value)}`);
 
       if (tile.value > 2048) {

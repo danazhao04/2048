@@ -229,9 +229,8 @@ body::after {
 }
 
 .tile-layer {
-  --tile-size: calc((100% - (var(--gap) * 3)) / 4);
   position: absolute;
-  inset: var(--board-pad);
+  inset: 0;
   z-index: 1;
   pointer-events: none;
 }
@@ -240,9 +239,7 @@ body::after {
   position: absolute;
   top: 0;
   left: 0;
-  width: var(--tile-size);
-  height: var(--tile-size);
-  transform: translate(var(--tile-x), var(--tile-y));
+  transform: translate3d(var(--tile-x, 0px), var(--tile-y, 0px), 0);
   transition: transform var(--move-duration) cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
 }
