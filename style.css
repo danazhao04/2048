@@ -74,7 +74,7 @@ body.menu-open {
 }
 
 body.menu-open .app {
-  transform: translateX(calc(-1 * var(--menu-width)));
+  transform: translateX(calc(-0.5 * var(--menu-width)));
 }
 
 .panel {
