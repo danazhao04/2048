@@ -15,6 +15,9 @@ class Game2048 {
     this.overlayTextEl = elements.overlayText;
     this.overlayPrimaryButton = elements.overlayPrimary;
     this.overlaySecondaryButton = elements.overlaySecondary;
+    this.menuWrapEl = elements.menuWrap;
+    this.menuToggleButton = elements.menuToggle;
+    this.menuPanelEl = elements.menuPanel;
 
     this.grid = [];
     this.score = 0;
@@ -31,6 +34,9 @@ class Game2048 {
     this.handlePointerDown = this.handlePointerDown.bind(this);
     this.handlePointerUp = this.handlePointerUp.bind(this);
     this.handleOverlayPrimary = this.handleOverlayPrimary.bind(this);
+    this.handleMenuToggle = this.handleMenuToggle.bind(this);
+    this.handleDocumentClick = this.handleDocumentClick.bind(this);
+    this.handleDocumentKeyDown = this.handleDocumentKeyDown.bind(this);
 
     this.createCells();
     this.bindEvents();
@@ -58,9 +64,16 @@ class Game2048 {
     this.newGameButton.addEventListener("click", () => this.start());
     this.overlayPrimaryButton.addEventListener("click", this.handleOverlayPrimary);
     this.overlaySecondaryButton.addEventListener("click", () => this.start());
+
+    if (this.menuToggleButton) {
+      this.menuToggleButton.addEventListener("click", this.handleMenuToggle);
+      document.addEventListener("click", this.handleDocumentClick);
+      document.addEventListener("keydown", this.handleDocumentKeyDown);
+    }
   }
 
   start() {
+    this.closeMenu();
     this.grid = this.createEmptyGrid();
     this.score = 0;
     this.over = false;
@@ -98,6 +111,57 @@ class Game2048 {
     } catch (error) {
       // Local storage can fail in restricted contexts; the game still works without it.
     }
+  }
+
+  openMenu() {
+    if (!this.menuWrapEl || !this.menuPanelEl || !this.menuToggleButton) {
+      return;
+    }
+
+    this.menuWrapEl.classList.add("open");
+    document.body.classList.add("menu-open");
+    this.menuToggleButton.setAttribute("aria-expanded", "true");
+  }
+
+  closeMenu() {
+    if (!this.menuWrapEl || !this.menuPanelEl || !this.menuToggleButton) {
+      return;
+    }
+
+    this.menuWrapEl.classList.remove("open");
+    document.body.classList.remove("menu-open");
+    this.menuToggleButton.setAttribute("aria-expanded", "false");
+  }
+
+  handleMenuToggle(event) {
+    event.stopPropagation();
+
+    if (!this.menuPanelEl) {
+      return;
+    }
+
+    if (!this.menuWrapEl.classList.contains("open")) {
+      this.openMenu();
+      return;
+    }
+
+    this.closeMenu();
+  }
+
+  handleDocumentClick(event) {
+    if (!this.menuWrapEl || this.menuWrapEl.contains(event.target)) {
+      return;
+    }
+
+    this.closeMenu();
+  }
+
+  handleDocumentKeyDown(event) {
+    if (event.key !== "Escape") {
+      return;
+    }
+
+    this.closeMenu();
   }
 
   handleKeyDown(event) {
@@ -138,7 +202,7 @@ class Game2048 {
     const dy = event.clientY - this.touchStart.y;
     this.touchStart = null;
 
-    if (Math.max(Math.abs(dx), Math.abs(dy)) < 28) {
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 22) {
       return;
     }
 
@@ -189,6 +253,7 @@ class Game2048 {
       return;
     }
 
+    const changedCells = this.getChangedCellIndices(this.grid, grid);
     this.grid = grid;
     this.score += scoreGained;
 
@@ -203,6 +268,8 @@ class Game2048 {
       this.won = true;
       this.render({
         bumpScore: true,
+        changedCells,
+        direction,
       });
       return;
     }
@@ -211,12 +278,16 @@ class Game2048 {
       this.over = true;
       this.render({
         bumpScore: true,
+        changedCells,
+        direction,
       });
       return;
     }
 
     this.render({
       bumpScore: scoreGained > 0,
+      changedCells,
+      direction,
     });
   }
 
@@ -346,18 +417,32 @@ class Game2048 {
     return false;
   }
 
+  getChangedCellIndices(previousGrid, nextGrid) {
+    const changedIndices = new Set();
+
+    for (let rowIndex = 0; rowIndex < GRID_SIZE; rowIndex += 1) {
+      for (let colIndex = 0; colIndex < GRID_SIZE; colIndex += 1) {
+        if (previousGrid[rowIndex][colIndex] !== nextGrid[rowIndex][colIndex]) {
+          changedIndices.add(rowIndex * GRID_SIZE + colIndex);
+        }
+      }
+    }
+
+    return changedIndices;
+  }
+
   render(options = {}) {
-    const { bumpScore = false } = options;
+    const { bumpScore = false, changedCells = new Set(), direction = null } = options;
 
     this.scoreEl.textContent = formatter.format(this.score);
     this.bestScoreEl.textContent = formatter.format(this.bestScore);
 
     this.updateScoreCardAnimation(bumpScore);
-    this.updateCells();
+    this.updateCells(changedCells, direction);
     this.updateOverlay();
   }
 
-  updateCells() {
+  updateCells(changedCells = new Set(), direction = null) {
     for (let rowIndex = 0; rowIndex < GRID_SIZE; rowIndex += 1) {
       for (let colIndex = 0; colIndex < GRID_SIZE; colIndex += 1) {
         const index = rowIndex * GRID_SIZE + colIndex;
@@ -378,6 +463,10 @@ class Game2048 {
 
         if (index === this.spawnedCellIndex) {
           cellEl.classList.add("spawn");
+        }
+
+        if (changedCells.has(index) && direction) {
+          cellEl.classList.add(`move-${direction}`);
         }
 
         if (value > 2048) {
@@ -454,6 +543,9 @@ const game = new Game2048({
   overlayText: document.getElementById("overlay-text"),
   overlayPrimary: document.getElementById("overlay-primary"),
   overlaySecondary: document.getElementById("overlay-secondary"),
+  menuWrap: document.querySelector(".menu-wrap"),
+  menuToggle: document.getElementById("menu-toggle"),
+  menuPanel: document.getElementById("menu-panel"),
 });
 
 window.game2048 = game;
