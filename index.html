@@ -27,16 +27,41 @@
         <span></span>
         <span></span>
       </button>
-      <div id="menu-panel" class="menu-panel" role="menu">
+      <div id="menu-panel" class="menu-panel" aria-label="Site menu">
         <a
           class="menu-link"
           href="https://www.linkedin.com/in/dana-zhao"
           target="_blank"
           rel="noopener noreferrer"
-          role="menuitem"
         >
           LinkedIn
         </a>
+        <section class="leaderboard-card" aria-labelledby="leaderboard-title">
+          <h2 id="leaderboard-title">Global Leaderboard</h2>
+          <p class="leaderboard-note">Shared top scores across all devices.</p>
+          <label class="sr-only" for="player-name">Player name</label>
+          <div class="leaderboard-form">
+            <input
+              id="player-name"
+              class="leaderboard-input"
+              type="text"
+              maxlength="20"
+              placeholder="Your name"
+              autocomplete="nickname"
+            />
+            <button
+              id="submit-score"
+              class="button button-primary leaderboard-submit"
+              type="button"
+            >
+              Submit Score
+            </button>
+          </div>
+          <p id="leaderboard-status" class="leaderboard-status" aria-live="polite">
+            Loading leaderboard...
+          </p>
+          <ol id="leaderboard-list" class="leaderboard-list"></ol>
+        </section>
       </div>
     </div>
 

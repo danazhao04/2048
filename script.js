@@ -1,5 +1,11 @@
 const GRID_SIZE = 4;
 const BEST_SCORE_KEY = "codex-2048-best-score";
+const PLAYER_NAME_KEY = "codex-2048-player-name";
+const LEADERBOARD_MAX_ENTRIES = 10;
+const SUPABASE_URL = "https://ocqqxvnubumnmvxrdzra.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY =
+  "sb_publishable_7SkVS64svHmJ3LzRydPpCg_VKVNGXLP";
+const SUPABASE_TABLE = "leaderboard_scores";
 const formatter = new Intl.NumberFormat();
 
 class Game2048 {
@@ -18,6 +24,10 @@ class Game2048 {
     this.menuWrapEl = elements.menuWrap;
     this.menuToggleButton = elements.menuToggle;
     this.menuPanelEl = elements.menuPanel;
+    this.playerNameInput = elements.playerName;
+    this.submitScoreButton = elements.submitScore;
+    this.leaderboardListEl = elements.leaderboardList;
+    this.leaderboardStatusEl = elements.leaderboardStatus;
 
     this.grid = [];
     this.score = 0;
@@ -29,6 +39,7 @@ class Game2048 {
     this.cellEls = [];
     this.spawnedCellIndex = null;
     this.overlayAction = "restart";
+    this.scoreSubmitted = false;
 
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.handlePointerDown = this.handlePointerDown.bind(this);
@@ -37,9 +48,12 @@ class Game2048 {
     this.handleMenuToggle = this.handleMenuToggle.bind(this);
     this.handleDocumentClick = this.handleDocumentClick.bind(this);
     this.handleDocumentKeyDown = this.handleDocumentKeyDown.bind(this);
+    this.handleLeaderboardSubmit = this.handleLeaderboardSubmit.bind(this);
+    this.handlePlayerNameKeyDown = this.handlePlayerNameKeyDown.bind(this);
 
     this.createCells();
     this.bindEvents();
+    this.initializeLeaderboard();
     this.start();
   }
 
@@ -64,6 +78,13 @@ class Game2048 {
     this.newGameButton.addEventListener("click", () => this.start());
     this.overlayPrimaryButton.addEventListener("click", this.handleOverlayPrimary);
     this.overlaySecondaryButton.addEventListener("click", () => this.start());
+    this.submitScoreButton?.addEventListener("click", this.handleLeaderboardSubmit);
+    this.playerNameInput?.addEventListener("keydown", this.handlePlayerNameKeyDown);
+    this.playerNameInput?.addEventListener("change", () => {
+      const normalizedName = this.normalizePlayerName(this.playerNameInput.value);
+      this.playerNameInput.value = normalizedName;
+      this.savePlayerName(normalizedName);
+    });
 
     if (this.menuToggleButton) {
       this.menuToggleButton.addEventListener("click", this.handleMenuToggle);
@@ -80,10 +101,12 @@ class Game2048 {
     this.won = false;
     this.keepPlaying = false;
     this.spawnedCellIndex = null;
+    this.scoreSubmitted = false;
 
     this.addRandomTile();
     this.addRandomTile();
 
+    this.updateSubmitButtonState();
     this.render({
       bumpScore: true,
     });
@@ -110,6 +133,265 @@ class Game2048 {
       localStorage.setItem(BEST_SCORE_KEY, String(this.bestScore));
     } catch (error) {
       // Local storage can fail in restricted contexts; the game still works without it.
+    }
+  }
+
+  initializeLeaderboard() {
+    if (!this.leaderboardListEl || !this.leaderboardStatusEl) {
+      return;
+    }
+
+    const savedName = this.loadPlayerName();
+    if (this.playerNameInput && savedName) {
+      this.playerNameInput.value = savedName;
+    }
+
+    this.renderLeaderboard([]);
+    this.setLeaderboardStatus("Loading leaderboard...");
+    void this.fetchLeaderboard();
+  }
+
+  loadPlayerName() {
+    try {
+      return this.normalizePlayerName(localStorage.getItem(PLAYER_NAME_KEY) || "");
+    } catch (error) {
+      return "";
+    }
+  }
+
+  savePlayerName(name) {
+    try {
+      const normalizedName = this.normalizePlayerName(name);
+      if (normalizedName) {
+        localStorage.setItem(PLAYER_NAME_KEY, normalizedName);
+      } else {
+        localStorage.removeItem(PLAYER_NAME_KEY);
+      }
+    } catch (error) {
+      // Ignore storage errors so gameplay stays uninterrupted.
+    }
+  }
+
+  normalizePlayerName(name) {
+    const normalized = String(name || "").replace(/\s+/g, " ").trim();
+    return normalized.slice(0, 20);
+  }
+
+  getPlayerName() {
+    if (!this.playerNameInput) {
+      return "";
+    }
+
+    const normalizedName = this.normalizePlayerName(this.playerNameInput.value);
+    this.playerNameInput.value = normalizedName;
+    return normalizedName;
+  }
+
+  handleLeaderboardSubmit() {
+    void this.submitScore({ manual: true });
+  }
+
+  handlePlayerNameKeyDown(event) {
+    if (event.key !== "Enter") {
+      return;
+    }
+
+    event.preventDefault();
+    this.handleLeaderboardSubmit();
+  }
+
+  setLeaderboardStatus(message, tone = "info") {
+    if (!this.leaderboardStatusEl) {
+      return;
+    }
+
+    this.leaderboardStatusEl.textContent = message;
+    this.leaderboardStatusEl.className = `leaderboard-status ${
+      tone === "success" || tone === "error" ? tone : ""
+    }`.trim();
+  }
+
+  renderLeaderboard(entries) {
+    if (!this.leaderboardListEl) {
+      return;
+    }
+
+    this.leaderboardListEl.replaceChildren();
+
+    if (!Array.isArray(entries) || entries.length === 0) {
+      const emptyItem = document.createElement("li");
+      emptyItem.className = "leaderboard-empty";
+      emptyItem.textContent = "No global scores yet. Be first.";
+      this.leaderboardListEl.appendChild(emptyItem);
+      return;
+    }
+
+    entries.slice(0, LEADERBOARD_MAX_ENTRIES).forEach((entry, index) => {
+      const row = document.createElement("li");
+      row.className = "leaderboard-entry";
+
+      const rank = document.createElement("span");
+      rank.className = "leaderboard-rank";
+      rank.textContent = `#${index + 1}`;
+
+      const name = document.createElement("span");
+      name.className = "leaderboard-name";
+      name.textContent = this.normalizePlayerName(entry.name) || "Anonymous";
+
+      const score = document.createElement("span");
+      score.className = "leaderboard-score";
+      score.textContent = formatter.format(Number(entry.score) || 0);
+
+      row.append(rank, name, score);
+      this.leaderboardListEl.appendChild(row);
+    });
+  }
+
+  getSupabaseHeaders() {
+    return {
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+    };
+  }
+
+  buildSupabaseLeaderboardUrl(limit = LEADERBOARD_MAX_ENTRIES) {
+    const url = new URL(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`);
+    url.searchParams.set("select", "name,score,created_at");
+    url.searchParams.set("order", "score.desc,created_at.asc");
+    url.searchParams.set("limit", String(limit));
+    return url.toString();
+  }
+
+  async fetchLeaderboardEntries(limit = LEADERBOARD_MAX_ENTRIES) {
+    const response = await fetch(this.buildSupabaseLeaderboardUrl(limit), {
+      headers: this.getSupabaseHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`leaderboard_fetch_${response.status}`);
+    }
+
+    const payload = await response.json();
+    return Array.isArray(payload) ? payload : [];
+  }
+
+  async fetchLeaderboard() {
+    try {
+      const entries = await this.fetchLeaderboardEntries();
+      this.renderLeaderboard(entries);
+
+      if (entries.length > 0) {
+        this.setLeaderboardStatus("Live leaderboard");
+      } else {
+        this.setLeaderboardStatus("No global scores yet. Be first.");
+      }
+    } catch (error) {
+      this.renderLeaderboard([]);
+      if (window.location.protocol === "file:") {
+        this.setLeaderboardStatus(
+          "Host the site (GitHub Pages) to enable global leaderboard.",
+          "error"
+        );
+        return;
+      }
+
+      this.setLeaderboardStatus("Leaderboard API not connected yet.", "error");
+    }
+  }
+
+  updateSubmitButtonState() {
+    if (!this.submitScoreButton) {
+      return;
+    }
+
+    this.submitScoreButton.disabled = !this.over || this.score <= 0 || this.scoreSubmitted;
+  }
+
+  maybeAutoSubmitOnGameOver() {
+    if (this.score <= 0 || this.scoreSubmitted) {
+      return;
+    }
+
+    const playerName = this.getPlayerName();
+    if (!playerName) {
+      this.setLeaderboardStatus(
+        "Add your name, then tap Submit Score to post globally."
+      );
+      return;
+    }
+
+    void this.submitScore({ manual: false });
+  }
+
+  async submitScore({ manual = false } = {}) {
+    if (!this.submitScoreButton) {
+      return;
+    }
+
+    if (!this.over) {
+      if (manual) {
+        this.setLeaderboardStatus("Finish your run first, then submit.", "error");
+      }
+      return;
+    }
+
+    if (this.scoreSubmitted) {
+      if (manual) {
+        this.setLeaderboardStatus("Score already submitted for this run.");
+      }
+      return;
+    }
+
+    const playerName = this.getPlayerName();
+    if (!playerName) {
+      this.setLeaderboardStatus("Enter your name first.", "error");
+      this.playerNameInput?.focus();
+      return;
+    }
+
+    this.savePlayerName(playerName);
+
+    if (this.score <= 0) {
+      this.setLeaderboardStatus("Play one round first, then submit.", "error");
+      return;
+    }
+
+    this.submitScoreButton.disabled = true;
+    this.setLeaderboardStatus("Submitting score...");
+
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`, {
+        method: "POST",
+        headers: {
+          ...this.getSupabaseHeaders(),
+          "content-type": "application/json",
+          prefer: "return=minimal",
+        },
+        body: JSON.stringify([{ name: playerName, score: this.score }]),
+      });
+
+      if (!response.ok) {
+        throw new Error(`submit_failed_${response.status}`);
+      }
+
+      const entries = await this.fetchLeaderboardEntries();
+      this.renderLeaderboard(entries);
+      this.scoreSubmitted = true;
+      this.setLeaderboardStatus(
+        `Saved ${formatter.format(this.score)} for ${playerName}.`,
+        "success"
+      );
+    } catch (error) {
+      if (window.location.protocol === "file:") {
+        this.setLeaderboardStatus(
+          "Host the site (GitHub Pages) to enable global leaderboard.",
+          "error"
+        );
+      } else {
+        this.setLeaderboardStatus("Could not submit score right now.", "error");
+      }
+    } finally {
+      this.updateSubmitButtonState();
     }
   }
 
@@ -223,6 +505,7 @@ class Game2048 {
         this.render({
           bumpScore: true,
         });
+        this.maybeAutoSubmitOnGameOver();
         return;
       }
 
@@ -246,6 +529,7 @@ class Game2048 {
         this.render({
           bumpScore: true,
         });
+        this.maybeAutoSubmitOnGameOver();
         return;
       }
 
@@ -281,6 +565,7 @@ class Game2048 {
         changedCells,
         direction,
       });
+      this.maybeAutoSubmitOnGameOver();
       return;
     }
 
@@ -438,6 +723,7 @@ class Game2048 {
     this.bestScoreEl.textContent = formatter.format(this.bestScore);
 
     this.updateScoreCardAnimation(bumpScore);
+    this.updateSubmitButtonState();
     this.updateCells(changedCells, direction);
     this.updateOverlay();
   }
@@ -508,7 +794,7 @@ class Game2048 {
       this.overlayTagEl.textContent = "Run Complete";
       this.overlayTitleEl.textContent = "No moves left";
       this.overlayTextEl.textContent =
-        "Start a new board and see if you can set a new personal best.";
+        "Start a new board and see if you can set a new personal best.\nGood riddance!";
       this.overlayPrimaryButton.textContent = "Play again";
       this.overlaySecondaryButton.hidden = true;
       this.overlayAction = "restart";
@@ -546,6 +832,10 @@ const game = new Game2048({
   menuWrap: document.querySelector(".menu-wrap"),
   menuToggle: document.getElementById("menu-toggle"),
   menuPanel: document.getElementById("menu-panel"),
+  playerName: document.getElementById("player-name"),
+  submitScore: document.getElementById("submit-score"),
+  leaderboardList: document.getElementById("leaderboard-list"),
+  leaderboardStatus: document.getElementById("leaderboard-status"),
 });
 
 window.game2048 = game;
