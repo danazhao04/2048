@@ -107,11 +107,8 @@ class Game2048 {
   }
 
   start() {
-    const hasName = this.handleNameRequirement();
-    if (hasName) {
-      this.closeMenu();
-      this.closeLeaderboardModal();
-    }
+    this.closeMenu();
+    this.closeLeaderboardModal();
     this.grid = this.createEmptyGrid();
     this.score = 0;
     this.over = false;
@@ -433,7 +430,7 @@ class Game2048 {
       this.renderLeaderboard(entries);
 
       if (entries.length > 0) {
-        this.setLeaderboardStatus("Live leaderboard");
+        this.setLeaderboardStatus("");
       } else {
         this.setLeaderboardStatus("No global scores yet. Be first.");
       }
