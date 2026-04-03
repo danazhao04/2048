@@ -36,32 +36,6 @@
         >
           LinkedIn
         </a>
-        <section class="leaderboard-card" aria-labelledby="leaderboard-title">
-          <h2 id="leaderboard-title">Global Leaderboard</h2>
-          <p class="leaderboard-note">Shared top scores across all devices.</p>
-          <label class="sr-only" for="player-name">Player name</label>
-          <div class="leaderboard-form">
-            <input
-              id="player-name"
-              class="leaderboard-input"
-              type="text"
-              maxlength="20"
-              placeholder="Your name"
-              autocomplete="nickname"
-            />
-            <button
-              id="submit-score"
-              class="button button-primary leaderboard-submit"
-              type="button"
-            >
-              Submit Score
-            </button>
-          </div>
-          <p id="leaderboard-status" class="leaderboard-status" aria-live="polite">
-            Loading leaderboard...
-          </p>
-          <ol id="leaderboard-list" class="leaderboard-list"></ol>
-        </section>
       </div>
     </div>
 
@@ -81,9 +55,16 @@
               <strong id="best-score">0</strong>
             </article>
           </div>
-          <div class="button-row">
+          <div class="button-row button-stack">
             <button id="new-game" class="button button-primary" type="button">
               New Game
+            </button>
+            <button
+              id="open-leaderboard"
+              class="button button-primary"
+              type="button"
+            >
+              Leaderboard
             </button>
           </div>
         </div>
@@ -118,6 +99,51 @@
         </div>
       </section>
     </main>
+
+    <div
+      id="leaderboard-modal"
+      class="leaderboard-modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="leaderboard-title"
+      aria-hidden="true"
+    >
+      <div class="leaderboard-dialog">
+        <button
+          id="close-leaderboard"
+          class="leaderboard-close"
+          type="button"
+          aria-label="Close leaderboard"
+        >
+          ×
+        </button>
+        <section class="leaderboard-card" aria-labelledby="leaderboard-title">
+          <h2 id="leaderboard-title">Global Leaderboard</h2>
+          <label class="sr-only" for="player-name">Player name</label>
+          <div class="leaderboard-form">
+            <input
+              id="player-name"
+              class="leaderboard-input"
+              type="text"
+              maxlength="20"
+              placeholder="Your name"
+              autocomplete="nickname"
+            />
+            <button
+              id="continue-game"
+              class="button button-primary leaderboard-continue"
+              type="button"
+            >
+              Continue
+            </button>
+          </div>
+          <p id="leaderboard-status" class="leaderboard-status" aria-live="polite">
+            Loading leaderboard...
+          </p>
+          <ol id="leaderboard-list" class="leaderboard-list"></ol>
+        </section>
+      </div>
+    </div>
 
     <script src="script.js"></script>
   </body>

@@ -222,6 +222,26 @@ body.menu-open .app {
   transform: translateX(-5px);
 }
 
+.leaderboard-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(14, 47, 74, 0.42);
+  backdrop-filter: blur(6px);
+}
+
+.leaderboard-modal.hidden {
+  display: none;
+}
+
+.leaderboard-dialog {
+  position: relative;
+  width: min(100%, 420px);
+}
+
 .leaderboard-card {
   margin-top: 0.7rem;
   padding: 0.8rem;
@@ -229,6 +249,36 @@ body.menu-open .app {
   border: 1px solid rgba(56, 137, 198, 0.18);
   background: rgba(255, 255, 255, 0.72);
   box-shadow: 0 8px 20px rgba(35, 103, 156, 0.14);
+}
+
+.leaderboard-dialog .leaderboard-card {
+  margin-top: 0;
+  background: rgba(246, 252, 255, 0.95);
+  box-shadow: 0 22px 40px rgba(24, 94, 143, 0.24);
+}
+
+.leaderboard-close {
+  appearance: none;
+  border: 1px solid rgba(53, 133, 195, 0.18);
+  border-radius: 999px;
+  width: 2rem;
+  height: 2rem;
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--accent-dark);
+  background: rgba(248, 253, 255, 0.95);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  position: absolute;
+  top: -0.65rem;
+  right: -0.65rem;
+  box-shadow: 0 8px 16px rgba(35, 103, 156, 0.2);
+}
+
+.leaderboard-close:hover {
+  background: #fff;
 }
 
 .leaderboard-card h2 {
@@ -248,6 +298,11 @@ body.menu-open .app {
   gap: 0.55rem;
 }
 
+.leaderboard-continue {
+  width: 100%;
+  justify-content: center;
+}
+
 .leaderboard-input {
   width: 100%;
   border: 1px solid rgba(56, 137, 198, 0.24);
@@ -261,17 +316,6 @@ body.menu-open .app {
 .leaderboard-input:focus {
   outline: 2px solid rgba(36, 136, 207, 0.28);
   outline-offset: 1px;
-}
-
-.leaderboard-submit {
-  width: 100%;
-  justify-content: center;
-}
-
-.leaderboard-submit:disabled {
-  cursor: wait;
-  opacity: 0.72;
-  transform: none;
 }
 
 .leaderboard-status {
@@ -347,6 +391,10 @@ body.menu-open .app {
   border: 0;
 }
 
+body.leaderboard-open {
+  overflow: hidden;
+}
+
 .hero-copy h1,
 .overlay-card h2 {
   margin: 0;
@@ -419,6 +467,15 @@ body.menu-open .app {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+.button-stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.button-stack .button {
+  width: 100%;
 }
 
 .button {
